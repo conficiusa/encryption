@@ -8,6 +8,7 @@ const rateLimit = require('express-rate-limit');
 
 // Database
 const connectDB = require('./config/database');
+const { connectSecureClient } = require('./utils/encryptionClient');
 
 // Routes
 const userRoutes = require('./routes/encryption.routes');
@@ -54,8 +55,8 @@ app.use((req, res, next) => {
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again after 15 minutes',
+    max: 10, // limit each IP to 100 requests per windowMs
+    message: 'You have been rate limited, please try again after 15 minutes',
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   })
@@ -79,7 +80,7 @@ app.get('/', (req, res) => {
 });
 
 // API Routes
-app.use('/api/users', userRoutes);
+app.use('/api/encryption', userRoutes); 
 
 // Error Handler
 app.use(errorHandlerMiddleware);
@@ -93,12 +94,18 @@ const port = process.env.PORT || 8000;
 
 const start = async () => {
   try {
+    // Connect to MongoDB using Mongoose
     await connectDB();
+    
+    // Connect to MongoDB using secure client - only connects once at startup
+    await connectSecureClient();
+    
     app.listen(port, () => {
       console.log(`Server is running on port ${port}`);
     });
   } catch (error) {
     console.error('Error starting server:', error);
+    process.exit(1);
   }
 };
 

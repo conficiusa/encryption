@@ -6,6 +6,10 @@ class encryptionController {
     const user = await encryptionService.createEncryption(req.body);
     res.status(StatusCodes.CREATED).json({ user });
   }
+  async fetchPatientMedicalRecord(req,res){
+    const data = await encryptionService.fetchUserMedicalRecords(req.params.id)
+    res.status(StatusCodes.OK).json({data})
+  }
 }
 
-module.exports = new encryptionController();
+module.exports = new encryptionController(); 

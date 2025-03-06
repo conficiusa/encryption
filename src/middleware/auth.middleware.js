@@ -15,7 +15,7 @@ const authenticateToken = (req, res, next) => {
         throw new UnauthenticatedError('Invalid authentication token');
     }
 
-    // Get request timestamp and signature
+    // Get request timestamp and signature 
     const timestamp = req.headers['x-request-timestamp'];
     const signature = req.headers['x-request-signature'];
 

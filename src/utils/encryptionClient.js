@@ -25,14 +25,77 @@ const dataKey = process.env.DEK_KEY;
 const RecordsSchema = encryptionSchema(dataKey);
 const medicalRecordSchema= {};
 medicalRecordSchema[nameSpace] = RecordsSchema;
+
+// Create clients
 const secureClient = new MongoClient(connectionString, {
   autoEncryption: {
     keyVaultNamespace,
     kmsProviders,
     schemaMap: medicalRecordSchema,
-    extraOptions,
+    extraOptions
   },
 });
 const regularClient = new MongoClient(connectionString);
 
-module.exports = { secureClient, regularClient };
+// Connection state tracking
+let secureClientConnected = false;
+let regularClientConnected = false;
+
+// Connection management functions
+const connectSecureClient = async () => {
+  if (!secureClientConnected) {
+    await secureClient.connect();
+    secureClientConnected = true;
+    console.log("Secure MongoDB client connected");
+  }
+  return secureClient;
+};
+
+const connectRegularClient = async () => {
+  if (!regularClientConnected) {
+    await regularClient.connect();
+    regularClientConnected = true;
+    console.log("Regular MongoDB client connected");
+  }
+  return regularClient;
+};
+
+// Graceful shutdown handler
+const closeConnections = async () => {
+  try {
+    if (secureClientConnected) {
+      await secureClient.close();
+      secureClientConnected = false;
+      console.log("Secure MongoDB client disconnected");
+    }
+    
+    if (regularClientConnected) {
+      await regularClient.close();
+      regularClientConnected = false;
+      console.log("Regular MongoDB client disconnected");
+    }
+  } catch (err) {
+    console.error("Error closing MongoDB connections:", err);
+  }
+};
+
+// Register shutdown handlers
+process.on('SIGINT', async () => {
+  console.log('Received SIGINT. Closing MongoDB connections...');
+  await closeConnections();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('Received SIGTERM. Closing MongoDB connections...');
+  await closeConnections();
+  process.exit(0);
+});
+
+module.exports = { 
+  secureClient, 
+  regularClient, 
+  connectSecureClient, 
+  connectRegularClient,
+  closeConnections 
+};
