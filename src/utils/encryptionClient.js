@@ -1,35 +1,12 @@
-const path = require("path");
 const { encryptionSchema } = require("./encryptionSchema");
-const { MongoClient } = require("mongodb");
-const os = require("os");
+const { MongoClient, ClientEncryption } = require("mongodb");
 
 const database = "Medcare";
 const collection = "medicalRecords";
 const nameSpace = `${database}.${collection}`; 
 const connectionString = process.env.MONGO_URI;
 
-// Determine the appropriate crypto library path based on platform
-const getCryptoLibraryPath = () => {
-  // Check if we're running in Docker (via environment variable)
-  if (process.env.PLATFORM === 'docker') {
-    console.log('Using MongoDB encryption in Docker environment');
-    // In Docker, use the absolute path to the copied shared library
-    return "/usr/lib/mongodb-crypt/libmongocrypt.so";
-  } else {
-    // On Windows, use the bundled DLL with absolute path
-    console.log('Using local Windows DLL for MongoDB encryption');
-    return path.resolve(__dirname, "mongo_crypt_v1.dll");
-  }
-};
-
-// Configure encryption options
-const extraOptions = {};
-const cryptSharedLibPath = getCryptoLibraryPath();
-if (cryptSharedLibPath) {
-  console.log(`Using crypto library at: ${cryptSharedLibPath}`);
-  extraOptions.cryptSharedLibPath = cryptSharedLibPath;
-}
-
+// Use the Windows DLL with absolute path
 const kmsProviders = {
   aws: {
     accessKeyId: process.env.AWS_ACCESS_KEY,
@@ -44,30 +21,22 @@ const medicalRecordSchema= {};
 medicalRecordSchema[nameSpace] = RecordsSchema;
 
 // Create clients
-const secureClient = new MongoClient(connectionString, {
+const regularClient = new MongoClient(connectionString,{
   autoEncryption: {
-    keyVaultNamespace,
+    bypassAutoEncryption:true,
+    keyVaultNamespace, 
     kmsProviders,
-    schemaMap: medicalRecordSchema,
-    extraOptions
   },
 });
-const regularClient = new MongoClient(connectionString);
+const coll= regularClient.db(database).collection(collection);
+const encryption = new ClientEncryption(regularClient, {    
+  bypassAutoEncryption:true,
+    keyVaultNamespace, 
+    kmsProviders,
+});
 
 // Connection state tracking
-let secureClientConnected = false;
 let regularClientConnected = false;
-
-// Connection management functions
-const connectSecureClient = async () => {
-  if (!secureClientConnected) {
-    await secureClient.connect();
-    secureClientConnected = true;
-    console.log("Secure MongoDB client connected");
-  }
-  return secureClient;
-};
-
 const connectRegularClient = async () => {
   if (!regularClientConnected) {
     await regularClient.connect();
@@ -80,11 +49,7 @@ const connectRegularClient = async () => {
 // Graceful shutdown handler
 const closeConnections = async () => {
   try {
-    if (secureClientConnected) {
-      await secureClient.close();
-      secureClientConnected = false;
-      console.log("Secure MongoDB client disconnected");
-    }
+    
     
     if (regularClientConnected) {
       await regularClient.close();
@@ -110,9 +75,9 @@ process.on('SIGTERM', async () => {
 });
 
 module.exports = { 
-  secureClient, 
+  encryption,
   regularClient, 
-  connectSecureClient, 
   connectRegularClient,
-  closeConnections 
+  closeConnections ,
+  coll
 };

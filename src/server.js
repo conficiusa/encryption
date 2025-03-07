@@ -96,10 +96,6 @@ const start = async () => {
   try {
     // Connect to MongoDB using Mongoose
     await connectDB();
-    
-    // Connect to MongoDB using secure client - only connects once at startup
-    await connectSecureClient();
-    
     app.listen(port, () => {
       console.log(`Server is running on port ${port}`);
     });
