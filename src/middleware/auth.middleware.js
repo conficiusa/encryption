@@ -15,33 +15,26 @@ const authenticateToken = (req, res, next) => {
         throw new UnauthenticatedError('Invalid authentication token');
     }
 
-    // Get request timestamp and signature 
-    const timestamp = req.headers['x-request-timestamp'];
-    const signature = req.headers['x-request-signature'];
+    // // Get request timestamp and signature 
+    // const timestamp = req.headers['x-request-timestamp'];
+    // const signature = req.headers['x-request-signature'];
 
-    // Verify request signature if we're in production
-    if (process.env.NODE_ENV === 'production') {
-        // Skip signature check for development but require for production
-        if (!timestamp || !signature) {
-            throw new UnauthenticatedError('Request timestamp and signature are required');
-        }
+    // // Verify request signature if we're in production
+    // if (process.env.NODE_ENV === 'production') {
+    //     // Skip signature check for development but require for production
+    //     if (!timestamp || !signature) {
+    //         throw new UnauthenticatedError('Request timestamp and signature are required');
+    //     }
 
-        // Verify signature
-        const isValidSignature = SignatureVerifier.verify(req, timestamp, signature);
-        if (!isValidSignature) {
-            throw new UnauthenticatedError('Invalid request signature');
-        }
-    }
+    //     // Verify signature
+    //     const isValidSignature = SignatureVerifier.verify(req, timestamp, signature);
+    //     if (!isValidSignature) {
+    //         throw new UnauthenticatedError('Invalid request signature');
+    //     }
+    // }
 
     // Check for valid origin if in production
-    if (process.env.NODE_ENV === 'production') {
-        const origin = req.headers.origin;
-        const allowedOrigins = [process.env.ALLOWED_ORIGIN, 'https://your-app-name.vercel.app'];
-        
-        if (origin && !allowedOrigins.includes(origin)) {
-            throw new ForbiddenError('Invalid origin');
-        }
-    }
+
 
     next();
 };

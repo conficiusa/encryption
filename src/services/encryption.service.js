@@ -1,7 +1,7 @@
 const { isValidObjectId,Types } = require('mongoose');
 const { secureClient, connectSecureClient } = require('../utils/encryptionClient');
 const { formSchema } = require('../utils/schema');
-const { NotFoundError } = require('../utils/errors');
+const { NotFoundError, ForbiddenError } = require('../utils/errors');
 const { ObjectId } = require('mongodb');
 
 class encryptionService {

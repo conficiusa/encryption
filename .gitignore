@@ -8,3 +8,6 @@
 .env.production.local
 npm-debug.log*
 yarn-debug.log*
+.env.docker
+.env.local.docker
+.env.development.docker

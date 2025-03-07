@@ -1,25 +1,42 @@
 const path = require("path");
 const { encryptionSchema } = require("./encryptionSchema");
 const { MongoClient } = require("mongodb");
+const os = require("os");
 
 const database = "Medcare";
 const collection = "medicalRecords";
-const nameSpace = `${database}.${collection}`;
+const nameSpace = `${database}.${collection}`; 
 const connectionString = process.env.MONGO_URI;
-const extraOptions = {
-  cryptSharedLibPath: path.resolve(
-    process.cwd(),
-    "src",
-    "utils",
-    "mongo_crypt_v1.dll"
-  ),
+
+// Determine the appropriate crypto library path based on platform
+const getCryptoLibraryPath = () => {
+  // Check if we're running in Docker (via environment variable)
+  if (process.env.PLATFORM === 'docker') {
+    console.log('Using MongoDB encryption in Docker environment');
+    // In Docker, use the absolute path to the copied shared library
+    return "/usr/lib/mongodb-crypt/libmongocrypt.so";
+  } else {
+    // On Windows, use the bundled DLL with absolute path
+    console.log('Using local Windows DLL for MongoDB encryption');
+    return path.resolve(__dirname, "mongo_crypt_v1.dll");
+  }
 };
+
+// Configure encryption options
+const extraOptions = {};
+const cryptSharedLibPath = getCryptoLibraryPath();
+if (cryptSharedLibPath) {
+  console.log(`Using crypto library at: ${cryptSharedLibPath}`);
+  extraOptions.cryptSharedLibPath = cryptSharedLibPath;
+}
+
 const kmsProviders = {
   aws: {
     accessKeyId: process.env.AWS_ACCESS_KEY,
     secretAccessKey: process.env.AWS_SECRET,
   },
 };
+
 const keyVaultNamespace = `encryption.__keyVault`;
 const dataKey = process.env.DEK_KEY;
 const RecordsSchema = encryptionSchema(dataKey);

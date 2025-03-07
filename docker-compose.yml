@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - NODE_ENV=production
+      - MONGO_URI=${MONGO_URI}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET=${AWS_SECRET}
+      - DEK_KEY=${DEK_KEY}
+      - ALLOWED_ORIGIN=${ALLOWED_ORIGIN}
+      - PLATFORM=docker
+      - API_TOKEN=${API_TOKEN}
+    restart: unless-stopped
